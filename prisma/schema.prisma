@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model MenuItem {
+  id            String   @id @default(cuid())
+  name          String
+  price         Float
+  originalPrice Float
+  description   String
+  category      String
+  image         String?
+  isAvailable   Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("menu_items")
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@map("categories")
+}
+
+model Customer {
+  id         String   @id @default(cuid())
+  name       String
+  phone      String? @unique
+  address    String?
+  orderCount Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@map("customers")
+}
+
+model Banner {
+  id         String   @id @default(cuid())
+  title      String
+  subtitle   String?
+  couponCode String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  @@map("banners")
+}
+
+model Coupon {
+  id              String    @id @default(cuid())
+  code            String    @unique
+  discountPercent Float?
+  discountAmount  Float?
+  
+  // --- New Capping Fields ---
+  minOrderAmount  Float?    // The minimum cart value required to apply this coupon
+  maxDiscountCap  Float?    // The maximum discount amount allowed (crucial for percent discounts)
+  
+  // --- New Time Period Fields ---
+  startDate       DateTime  @default(now()) // When the coupon becomes active
+  expiryDate      DateTime? // When the coupon expires (End Date)
+  
+  maxUses         Int       @default(0)
+  usedCount       Int       @default(0)
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+
+  @@map("coupons")
+}

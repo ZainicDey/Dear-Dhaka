@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-bricolage-grotesque);
+  --font-mono: var(--font-geist-mono);
+
+  --color-brand-brown: #765434;
+  --color-brand-orange: #c14627;
+  --color-brand-yellow: #fcb215;
+  --color-brand-white-light: #fffbff;
+  --color-brand-white-dark: #fdfffc;
+  --color-brand-cream: #f7f6f0;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+/* Scrollbar hide — not achievable in plain Tailwind */
+.scrollbar-hide {
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
