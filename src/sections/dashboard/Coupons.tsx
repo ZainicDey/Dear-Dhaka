@@ -8,9 +8,12 @@ const mockCoupons = [
     code: "DEARDHAKA15",
     discountPercent: 15,
     discountAmount: null,
+    minOrderAmount: 1000,
+    maxDiscountCap: 500,
     maxUses: 100,
     usedCount: 43,
-    expiryDate: "2026-08-31",
+    startDate: "2024-01-01T00:00:00Z",
+    expiryDate: "2026-08-31T23:59:59Z",
     isActive: true,
   },
   {
@@ -18,9 +21,12 @@ const mockCoupons = [
     code: "YUMMY20",
     discountPercent: 20,
     discountAmount: null,
+    minOrderAmount: null,
+    maxDiscountCap: 300,
     maxUses: 50,
     usedCount: 12,
-    expiryDate: "2026-07-31",
+    startDate: "2024-05-01T00:00:00Z",
+    expiryDate: "2026-07-31T23:59:59Z",
     isActive: true,
   },
   {
@@ -28,9 +34,12 @@ const mockCoupons = [
     code: "FLAT50",
     discountPercent: null,
     discountAmount: 50,
+    minOrderAmount: 200,
+    maxDiscountCap: null,
     maxUses: 200,
     usedCount: 198,
-    expiryDate: "2026-07-15",
+    startDate: "2024-01-01T00:00:00Z",
+    expiryDate: "2026-07-15T23:59:59Z",
     isActive: false,
   },
 ];
@@ -38,6 +47,7 @@ const mockCoupons = [
 export default function Coupons() {
   const [coupons, setCoupons] = useState(mockCoupons);
   const [showForm, setShowForm] = useState(false);
+  const [discountType, setDiscountType] = useState<"percent" | "amount">("percent");
 
   const toggleActive = (id: string) => {
     setCoupons((prev) =>
@@ -63,22 +73,62 @@ export default function Coupons() {
             placeholder="Coupon code (e.g. SAVE20)"
             className="w-full bg-[#f4f3ed] rounded-xl py-3 px-4 text-[14px] outline-none text-[#301010] placeholder:text-[#a3a3a3] uppercase tracking-wider"
           />
+          
           <div className="flex gap-2">
+            <select 
+              value={discountType}
+              onChange={(e) => setDiscountType(e.target.value as "percent" | "amount")}
+              className="flex-1 bg-[#f4f3ed] rounded-xl py-3 px-4 text-[14px] outline-none text-[#301010]"
+            >
+              <option value="percent">Percentage (%)</option>
+              <option value="amount">Fixed Amount (৳)</option>
+            </select>
+            
             <input
               type="number"
-              placeholder="Discount %"
-              className="flex-1 bg-[#f4f3ed] rounded-xl py-3 px-4 text-[14px] outline-none text-[#301010] placeholder:text-[#a3a3a3]"
-            />
-            <input
-              type="number"
-              placeholder="Max uses"
+              placeholder={discountType === "percent" ? "Discount %" : "Discount Amount"}
               className="flex-1 bg-[#f4f3ed] rounded-xl py-3 px-4 text-[14px] outline-none text-[#301010] placeholder:text-[#a3a3a3]"
             />
           </div>
+
+          <div className="flex gap-2">
+            <input
+              type="number"
+              placeholder="Min Order Amount (Optional)"
+              className="flex-1 bg-[#f4f3ed] rounded-xl py-3 px-4 text-[14px] outline-none text-[#301010] placeholder:text-[#a3a3a3]"
+            />
+            {discountType === "percent" && (
+              <input
+                type="number"
+                placeholder="Max Cap (Optional)"
+                className="flex-1 bg-[#f4f3ed] rounded-xl py-3 px-4 text-[14px] outline-none text-[#301010] placeholder:text-[#a3a3a3]"
+              />
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            <div className="flex-1 w-0">
+              <label className="text-[12px] text-[#737373] ml-2 block mb-1">Start Date</label>
+              <input
+                type="datetime-local"
+                className="w-full bg-[#f4f3ed] rounded-xl py-3 pl-3 pr-1 text-[13px] outline-none text-[#301010]"
+              />
+            </div>
+            <div className="flex-1 w-0">
+              <label className="text-[12px] text-[#737373] ml-2 block mb-1">Expiry Date</label>
+              <input
+                type="datetime-local"
+                className="w-full bg-[#f4f3ed] rounded-xl py-3 pl-3 pr-1 text-[13px] outline-none text-[#301010]"
+              />
+            </div>
+          </div>
+          
           <input
-            type="date"
-            className="w-full bg-[#f4f3ed] rounded-xl py-3 px-4 text-[14px] outline-none text-[#301010]"
+            type="number"
+            placeholder="Max uses (0 for unlimited)"
+            className="w-full bg-[#f4f3ed] rounded-xl py-3 px-4 text-[14px] outline-none text-[#301010] placeholder:text-[#a3a3a3]"
           />
+
           <button className="w-full bg-brand-yellow rounded-xl py-3 font-bold text-[14px] text-[#301010] cursor-pointer active:scale-[0.98] transition-transform">
             Create Coupon
           </button>
@@ -89,9 +139,9 @@ export default function Coupons() {
       {coupons.map((coupon) => {
         const usagePercent =
           coupon.maxUses > 0
-            ? Math.round((coupon.usedCount / coupon.maxUses) * 100)
+            ? Math.min(100, Math.round((coupon.usedCount / coupon.maxUses) * 100))
             : 0;
-        const isExpired = new Date(coupon.expiryDate) < new Date();
+        const isExpired = coupon.expiryDate ? new Date(coupon.expiryDate) < new Date() : false;
 
         return (
           <div
@@ -133,22 +183,40 @@ export default function Coupons() {
 
             {/* Usage bar */}
             <div className="mt-3">
+              {(coupon.minOrderAmount || coupon.maxDiscountCap) && (
+                <div className="flex flex-wrap gap-2 text-[12px] mb-2">
+                  {coupon.minOrderAmount && (
+                    <span className="bg-[#f4f3ed] text-[#737373] px-2 py-0.5 rounded-md">
+                      Min Order: ৳{coupon.minOrderAmount}
+                    </span>
+                  )}
+                  {coupon.maxDiscountCap && (
+                    <span className="bg-[#f4f3ed] text-[#737373] px-2 py-0.5 rounded-md">
+                      Max Cap: ৳{coupon.maxDiscountCap}
+                    </span>
+                  )}
+                </div>
+              )}
+              
               <div className="flex justify-between text-[12px] mb-1">
                 <span className="text-[#737373]">
-                  {coupon.usedCount}/{coupon.maxUses} used
+                  {coupon.usedCount}/{coupon.maxUses === 0 ? '∞' : coupon.maxUses} used
                 </span>
                 <span className="text-[#737373]">
-                  Expires: {coupon.expiryDate}
+                  {coupon.expiryDate ? `Expires: ${new Date(coupon.expiryDate).toLocaleString()}` : 'No Expiry'}
                 </span>
               </div>
-              <div className="w-full h-2 bg-[#f4f3ed] rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all ${
-                    usagePercent >= 90 ? "bg-red-400" : "bg-brand-yellow"
-                  }`}
-                  style={{ width: `${usagePercent}%` }}
-                />
-              </div>
+              
+              {coupon.maxUses > 0 && (
+                <div className="w-full h-2 bg-[#f4f3ed] rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      usagePercent >= 90 ? "bg-red-400" : "bg-brand-yellow"
+                    }`}
+                    style={{ width: `${usagePercent}%` }}
+                  />
+                </div>
+              )}
             </div>
 
             {isExpired && (
@@ -162,3 +230,4 @@ export default function Coupons() {
     </div>
   );
 }
+

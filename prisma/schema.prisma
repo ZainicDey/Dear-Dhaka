@@ -27,6 +27,7 @@ model Category {
   order     Int      @default(0)
   createdAt DateTime @default(now())
 
+  @@index([order]) 
   @@map("categories")
 }
 
@@ -47,8 +48,10 @@ model Banner {
   subtitle   String?
   couponCode String?
   isActive   Boolean  @default(true)
+  order      Int      @default(0) 
   createdAt  DateTime @default(now())
 
+  @@index([order]) 
   @@map("banners")
 }
 
