@@ -26,7 +26,7 @@ export default function Home() {
     getCategories()
       .then((dbCategories) => {
         if (dbCategories && dbCategories.length > 0) {
-          const names = dbCategories.map((c) => c.name);
+          const names = dbCategories.map((c: { name: string }) => c.name);
           setCategoriesList(names);
           setSelectedCategory(names[0]);
         }
