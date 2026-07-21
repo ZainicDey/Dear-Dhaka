@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { 
   getBanners, 
   createBanner, 
@@ -9,6 +9,117 @@ import {
   reorderBanners,
   getCoupons
 } from "@/actions/marketing";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  TouchSensor
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+function SortableBannerItem({ banner, handleToggle, handleDelete }: any) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: banner.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 1,
+    position: 'relative' as const,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`bg-white rounded-2xl p-4 shadow-sm border transition-colors ${
+        banner.isActive ? "border-[#e5e5e5]/50" : "border-red-200 opacity-60"
+      } ${isDragging ? "shadow-md ring-2 ring-brand-yellow/50 z-10 scale-[1.02]" : ""}`}
+    >
+      <div className="flex items-start justify-between">
+        <div className="flex gap-4 items-center flex-1">
+          {/* Drag Handle */}
+          <div 
+            {...attributes} 
+            {...listeners}
+            className="text-[#d9d9d9] shrink-0 cursor-grab active:cursor-grabbing hover:text-brand-yellow transition-colors touch-none"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="9" cy="6" r="1.5" />
+              <circle cx="15" cy="6" r="1.5" />
+              <circle cx="9" cy="12" r="1.5" />
+              <circle cx="15" cy="12" r="1.5" />
+              <circle cx="9" cy="18" r="1.5" />
+              <circle cx="15" cy="18" r="1.5" />
+            </svg>
+          </div>
+          
+          <div className="flex-1 flex items-center gap-4">
+            {banner.imageUrl ? (
+              <img src={banner.imageUrl} alt="Banner" className="h-16 w-24 object-cover rounded-lg" />
+            ) : (
+              <div className="h-16 w-24 bg-[#f4f3ed] rounded-lg flex items-center justify-center text-[#a3a3a3] text-[10px] font-bold tracking-wider">
+                NO IMAGE
+              </div>
+            )}
+            {banner.couponCode && (
+              <div className="bg-brand-yellow/15 border border-brand-yellow/30 rounded-lg px-3 py-1.5 flex items-center gap-2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#301010]/60">
+                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                  <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                </svg>
+                <span className="text-[13px] font-extrabold text-[#301010] tracking-wider uppercase">
+                  {banner.couponCode}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Toggle */}
+        <button
+          onClick={() => handleToggle(banner.id)}
+          className={`relative w-12 h-7 rounded-full transition-colors cursor-pointer shrink-0 ml-3 ${
+            banner.isActive ? "bg-green-500" : "bg-[#d9d9d9]"
+          }`}
+        >
+          <div
+            className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-sm transition-transform ${
+              banner.isActive ? "left-[22px]" : "left-0.5"
+            }`}
+          />
+        </button>
+      </div>
+
+      {/* Actions row */}
+      <div className="flex gap-2 mt-4 pt-3 border-t border-[#f4f3ed]">
+        <button 
+          onClick={() => handleDelete(banner.id)}
+          className="w-full py-2 rounded-lg bg-red-50 text-[13px] font-semibold text-red-500 cursor-pointer hover:bg-red-100 active:scale-[0.98] transition-all"
+        >
+          Delete Banner
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function AdBanners() {
   const [banners, setBanners] = useState<any[]>([]);
@@ -18,9 +129,13 @@ export default function AdBanners() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
-  const [overIdx, setOverIdx] = useState<number | null>(null);
-  const dragNodeRef = useRef<HTMLDivElement | null>(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(TouchSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const fetchData = async () => {
     try {
@@ -29,7 +144,7 @@ export default function AdBanners() {
         getCoupons(),
       ]);
       setBanners(fetchedBanners);
-      setCoupons(fetchedCoupons.filter((c: any) => c.isActive)); // Only active coupons for selection
+      setCoupons(fetchedCoupons.filter((c: any) => c.isActive));
     } catch (error) {
       console.error(error);
     } finally {
@@ -90,28 +205,14 @@ export default function AdBanners() {
     }
   };
 
-  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
-    setDraggedIdx(index);
-    dragNodeRef.current = e.currentTarget;
-    e.dataTransfer.effectAllowed = "move";
-    requestAnimationFrame(() => {
-      if (dragNodeRef.current) dragNodeRef.current.style.opacity = "0.4";
-    });
-  };
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    if (draggedIdx === null || index === draggedIdx) return;
-    setOverIdx(index);
-  };
+    if (over && active.id !== over.id) {
+      const oldIndex = banners.findIndex(b => b.id === active.id);
+      const newIndex = banners.findIndex(b => b.id === over.id);
 
-  const handleDragEnd = async () => {
-    if (dragNodeRef.current) dragNodeRef.current.style.opacity = "1";
-    if (draggedIdx !== null && overIdx !== null && draggedIdx !== overIdx) {
-      const reordered = [...banners];
-      const [moved] = reordered.splice(draggedIdx, 1);
-      reordered.splice(overIdx, 0, moved);
+      const reordered = arrayMove(banners, oldIndex, newIndex);
       setBanners(reordered);
       
       try {
@@ -121,12 +222,7 @@ export default function AdBanners() {
         fetchData();
       }
     }
-    setDraggedIdx(null);
-    setOverIdx(null);
-    dragNodeRef.current = null;
   };
-
-  const handleDragLeave = () => setOverIdx(null);
 
   if (loading) {
     return <div className="text-center py-4">Loading banners...</div>;
@@ -214,87 +310,32 @@ export default function AdBanners() {
       )}
 
       {/* Banner cards */}
-      <div className="flex flex-col gap-4">
-        {banners.map((banner, index) => (
-          <div
-            key={banner.id}
-            draggable
-            onDragStart={(e) => handleDragStart(e, index)}
-            onDragOver={(e) => handleDragOver(e, index)}
-            onDragEnd={handleDragEnd}
-            onDragLeave={handleDragLeave}
-            className={`bg-white rounded-2xl p-4 shadow-sm border transition-all ${
-              banner.isActive ? "border-[#e5e5e5]/50" : "border-red-200 opacity-60"
-            } ${
-              overIdx === index && draggedIdx !== null
-                ? "border-brand-yellow ring-2 ring-brand-yellow/30 scale-[1.02]"
-                : ""
-            }`}
+      <DndContext 
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex flex-col gap-4">
+          <SortableContext 
+            items={banners.map(b => b.id)}
+            strategy={verticalListSortingStrategy}
           >
-            <div className="flex items-start justify-between">
-              <div className="flex gap-3">
-                {/* Drag Handle */}
-                <div className="text-[#d9d9d9] shrink-0 cursor-grab active:cursor-grabbing self-center mr-1">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                    <circle cx="9" cy="6" r="1.5" />
-                    <circle cx="15" cy="6" r="1.5" />
-                    <circle cx="9" cy="12" r="1.5" />
-                    <circle cx="15" cy="12" r="1.5" />
-                    <circle cx="9" cy="18" r="1.5" />
-                    <circle cx="15" cy="18" r="1.5" />
-                  </svg>
-                </div>
-                
-                <div className="flex-1">
-                  {banner.imageUrl ? (
-                    <img src={banner.imageUrl} alt="Banner" className="h-16 object-cover rounded-lg mb-2" />
-                  ) : (
-                    <div className="h-16 w-32 bg-[#f4f3ed] rounded-lg mb-2 flex items-center justify-center text-[#a3a3a3] text-[10px] font-bold tracking-wider">
-                      NO IMAGE
-                    </div>
-                  )}
-                  {banner.couponCode && (
-                    <div className="mt-2 bg-brand-yellow/15 border border-brand-yellow/30 rounded-lg px-2.5 py-1 w-fit">
-                      <span className="text-[12px] font-extrabold text-[#301010] tracking-wider">
-                        {banner.couponCode}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Toggle */}
-              <button
-                onClick={() => handleToggle(banner.id)}
-                className={`relative w-12 h-7 rounded-full transition-colors cursor-pointer shrink-0 ml-3 ${
-                  banner.isActive ? "bg-green-500" : "bg-[#d9d9d9]"
-                }`}
-              >
-                <div
-                  className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-sm transition-transform ${
-                    banner.isActive ? "left-[22px]" : "left-0.5"
-                  }`}
-                />
-              </button>
+            {banners.map((banner) => (
+              <SortableBannerItem 
+                key={banner.id} 
+                banner={banner} 
+                handleToggle={handleToggle}
+                handleDelete={handleDelete}
+              />
+            ))}
+          </SortableContext>
+          {banners.length === 0 && !loading && (
+            <div className="text-center py-6 text-gray-500 text-[14px]">
+              No banners created yet.
             </div>
-
-            {/* Actions row */}
-            <div className="flex gap-2 mt-3 pt-3 border-t border-[#f4f3ed]">
-              <button 
-                onClick={() => handleDelete(banner.id)}
-                className="w-full py-2 rounded-lg bg-red-50 text-[13px] font-semibold text-red-500 cursor-pointer hover:bg-red-100 active:scale-[0.98] transition-all"
-              >
-                Delete Banner
-              </button>
-            </div>
-          </div>
-        ))}
-        {banners.length === 0 && !loading && (
-          <div className="text-center py-6 text-gray-500 text-[14px]">
-            No banners created yet.
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </DndContext>
     </div>
   );
 }

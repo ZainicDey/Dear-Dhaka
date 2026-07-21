@@ -1,12 +1,30 @@
 "use client";
 
-import { useState, useEffect, useRef, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import {
   getCategories,
   createCategory,
   deleteCategory,
   updateCategoryOrder,
 } from "@/actions/categories";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  TouchSensor
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 type Category = {
   id: string;
@@ -15,13 +33,96 @@ type Category = {
   createdAt: Date;
 };
 
+function SortableCategoryItem({ cat, index, handleDelete, isPending }: any) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: cat.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 1,
+    position: 'relative' as const,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`bg-white rounded-2xl px-4 py-3.5 shadow-sm border flex items-center gap-3 select-none transition-all duration-150 ${
+        isDragging
+          ? "border-brand-yellow ring-2 ring-brand-yellow/30 shadow-md scale-[1.02] z-10"
+          : "border-[#e5e5e5]/50"
+      }`}
+    >
+      {/* Drag handle */}
+      <div 
+        {...attributes} 
+        {...listeners}
+        className="text-[#d9d9d9] shrink-0 cursor-grab active:cursor-grabbing hover:text-brand-yellow transition-colors touch-none"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="9" cy="6" r="1.5" />
+          <circle cx="15" cy="6" r="1.5" />
+          <circle cx="9" cy="12" r="1.5" />
+          <circle cx="15" cy="12" r="1.5" />
+          <circle cx="9" cy="18" r="1.5" />
+          <circle cx="15" cy="18" r="1.5" />
+        </svg>
+      </div>
+
+      {/* Order number */}
+      <span className="text-[12px] font-bold text-[#a3a3a3] w-5 text-center shrink-0">
+        {index + 1}
+      </span>
+
+      {/* Name */}
+      <span className="flex-1 font-semibold text-[15px] text-[#301010]">
+        {cat.name}
+      </span>
+
+      {/* Delete */}
+      <button
+        onClick={() => handleDelete(cat.id)}
+        disabled={isPending}
+        className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 cursor-pointer hover:bg-red-100 active:scale-95 transition-transform disabled:opacity-50"
+        aria-label={`Delete ${cat.name}`}
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#ef4444"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 export default function Categories() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [newCategory, setNewCategory] = useState("");
   const [isPending, startTransition] = useTransition();
-  const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
-  const [overIdx, setOverIdx] = useState<number | null>(null);
-  const dragNodeRef = useRef<HTMLDivElement | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(TouchSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Fetch categories on mount
   useEffect(() => {
@@ -50,69 +151,31 @@ export default function Categories() {
     });
   };
 
-  // --- Drag & Drop ---
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
 
-  const handleDragStart = (
-    e: React.DragEvent<HTMLDivElement>,
-    index: number
-  ) => {
-    setDraggedIdx(index);
-    dragNodeRef.current = e.currentTarget;
-    e.dataTransfer.effectAllowed = "move";
-    // Make the dragged item semi-transparent after a frame
-    requestAnimationFrame(() => {
-      if (dragNodeRef.current) {
-        dragNodeRef.current.style.opacity = "0.4";
-      }
-    });
-  };
+    if (over && active.id !== over.id) {
+      const oldIndex = categories.findIndex(c => c.id === active.id);
+      const newIndex = categories.findIndex(c => c.id === over.id);
 
-  const handleDragOver = (
-    e: React.DragEvent<HTMLDivElement>,
-    index: number
-  ) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    if (draggedIdx === null || index === draggedIdx) return;
-    setOverIdx(index);
-  };
-
-  const handleDragEnd = () => {
-    // Restore opacity
-    if (dragNodeRef.current) {
-      dragNodeRef.current.style.opacity = "1";
-    }
-
-    if (draggedIdx !== null && overIdx !== null && draggedIdx !== overIdx) {
-      // Reorder locally
-      const reordered = [...categories];
-      const [moved] = reordered.splice(draggedIdx, 1);
-      reordered.splice(overIdx, 0, moved);
-
-      // Assign new order values
+      const reordered = arrayMove(categories, oldIndex, newIndex);
+      
       const withNewOrder = reordered.map((cat, i) => ({
         ...cat,
         order: i,
       }));
+      
       setCategories(withNewOrder);
 
-      // Persist to DB
       const updates = withNewOrder.map((cat) => ({
         id: cat.id,
         order: cat.order,
       }));
+      
       startTransition(async () => {
         await updateCategoryOrder(updates);
       });
     }
-
-    setDraggedIdx(null);
-    setOverIdx(null);
-    dragNodeRef.current = null;
-  };
-
-  const handleDragLeave = () => {
-    setOverIdx(null);
   };
 
   return (
@@ -138,78 +201,34 @@ export default function Categories() {
       </div>
 
       {/* Categories list */}
-      <div className="flex flex-col gap-2">
-        {categories.map((cat, index) => (
-          <div
-            key={cat.id}
-            draggable
-            onDragStart={(e) => handleDragStart(e, index)}
-            onDragOver={(e) => handleDragOver(e, index)}
-            onDragEnd={handleDragEnd}
-            onDragLeave={handleDragLeave}
-            className={`bg-white rounded-2xl px-4 py-3.5 shadow-sm border flex items-center gap-3 select-none transition-all duration-150 ${
-              overIdx === index && draggedIdx !== null
-                ? "border-brand-yellow ring-2 ring-brand-yellow/30 scale-[1.02]"
-                : "border-[#e5e5e5]/50"
-            }`}
+      <DndContext 
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex flex-col gap-2">
+          <SortableContext 
+            items={categories.map(c => c.id)}
+            strategy={verticalListSortingStrategy}
           >
-            {/* Drag handle */}
-            <div className="text-[#d9d9d9] shrink-0 cursor-grab active:cursor-grabbing">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <circle cx="9" cy="6" r="1.5" />
-                <circle cx="15" cy="6" r="1.5" />
-                <circle cx="9" cy="12" r="1.5" />
-                <circle cx="15" cy="12" r="1.5" />
-                <circle cx="9" cy="18" r="1.5" />
-                <circle cx="15" cy="18" r="1.5" />
-              </svg>
+            {categories.map((cat, index) => (
+              <SortableCategoryItem 
+                key={cat.id} 
+                cat={cat} 
+                index={index} 
+                handleDelete={handleDelete} 
+                isPending={isPending} 
+              />
+            ))}
+          </SortableContext>
+
+          {categories.length === 0 && !isPending && (
+            <div className="text-center py-8 text-[#a3a3a3] text-[14px]">
+              No categories yet. Add one above.
             </div>
-
-            {/* Order number */}
-            <span className="text-[12px] font-bold text-[#a3a3a3] w-5 text-center shrink-0">
-              {index + 1}
-            </span>
-
-            {/* Name */}
-            <span className="flex-1 font-semibold text-[15px] text-[#301010]">
-              {cat.name}
-            </span>
-
-            {/* Delete */}
-            <button
-              onClick={() => handleDelete(cat.id)}
-              disabled={isPending}
-              className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 cursor-pointer active:scale-95 transition-transform disabled:opacity-50"
-              aria-label={`Delete ${cat.name}`}
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#ef4444"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          </div>
-        ))}
-
-        {categories.length === 0 && !isPending && (
-          <div className="text-center py-8 text-[#a3a3a3] text-[14px]">
-            No categories yet. Add one above.
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </DndContext>
     </div>
   );
 }
