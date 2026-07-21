@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { supabase } from "@/lib/supabase";
 
 export async function getMenuItems() {
   return await prisma.menuItem.findMany({
@@ -11,20 +12,57 @@ export async function getMenuItems() {
 
 export async function createMenuItem(formData: FormData) {
   const name = String(formData.get("name"));
-  const price = Number(formData.get("price"));
   const originalPrice = Number(formData.get("originalPrice"));
+  const discountType = formData.get("discountType") as string | null;
+  const discountValueStr = formData.get("discountValue");
+  const discountValue = discountValueStr ? Number(discountValueStr) : null;
   const description = String(formData.get("description"));
   const category = String(formData.get("category"));
-  const image = formData.get("image") as string | null;
+
+  const imageFile = formData.get("image") as File | null;
+  let imageUrl: string | null = null;
+
+  if (imageFile && imageFile.size > 0) {
+    const fileExt = imageFile.name.split(".").pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+    const buffer = await imageFile.arrayBuffer();
+
+    const { error } = await supabase.storage
+      .from("menu-items")
+      .upload(fileName, buffer, {
+        contentType: imageFile.type,
+      });
+
+    if (error) {
+      console.error("Supabase upload error:", error);
+      throw new Error("Failed to upload image");
+    }
+
+    const { data } = supabase.storage.from("menu-items").getPublicUrl(fileName);
+
+    imageUrl = data.publicUrl;
+  } else if (typeof formData.get("image") === "string") {
+    imageUrl = formData.get("image") as string;
+  }
+
+  let price = originalPrice;
+  if (discountType === "FLAT" && discountValue) {
+    price = Math.max(0, originalPrice - discountValue);
+  } else if (discountType === "PERCENTAGE" && discountValue) {
+    price = Math.max(0, originalPrice - (originalPrice * discountValue) / 100);
+  }
 
   await prisma.menuItem.create({
     data: {
       name,
       price,
       originalPrice,
+      discountType,
+      discountValue,
       description,
       category,
-      image,
+      image: imageUrl,
     },
   });
 
@@ -33,11 +71,46 @@ export async function createMenuItem(formData: FormData) {
 
 export async function updateMenuItem(id: string, formData: FormData) {
   const name = String(formData.get("name"));
-  const price = Number(formData.get("price"));
   const originalPrice = Number(formData.get("originalPrice"));
+  const discountType = formData.get("discountType") as string | null;
+  const discountValueStr = formData.get("discountValue");
+  const discountValue = discountValueStr ? Number(discountValueStr) : null;
   const description = String(formData.get("description"));
   const category = String(formData.get("category"));
-  const image = formData.get("image") as string | null;
+
+  const imageFile = formData.get("image") as File | null;
+  let imageUrl: string | null = null;
+
+  if (imageFile && imageFile.size > 0) {
+    const fileExt = imageFile.name.split(".").pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+    const buffer = await imageFile.arrayBuffer();
+
+    const { error } = await supabase.storage
+      .from("menu-items")
+      .upload(fileName, buffer, {
+        contentType: imageFile.type,
+      });
+
+    if (error) {
+      console.error("Supabase upload error:", error);
+      throw new Error("Failed to upload image");
+    }
+
+    const { data } = supabase.storage.from("menu-items").getPublicUrl(fileName);
+
+    imageUrl = data.publicUrl;
+  } else if (typeof formData.get("image") === "string") {
+    imageUrl = formData.get("image") as string;
+  }
+
+  let price = originalPrice;
+  if (discountType === "FLAT" && discountValue) {
+    price = Math.max(0, originalPrice - discountValue);
+  } else if (discountType === "PERCENTAGE" && discountValue) {
+    price = Math.max(0, originalPrice - (originalPrice * discountValue) / 100);
+  }
 
   await prisma.menuItem.update({
     where: { id },
@@ -45,9 +118,11 @@ export async function updateMenuItem(id: string, formData: FormData) {
       name,
       price,
       originalPrice,
+      discountType,
+      discountValue,
       description,
       category,
-      ...(image && { image }),
+      ...(imageUrl && { image: imageUrl }),
     },
   });
 

@@ -8,16 +8,17 @@ import SandtimerIcon from "@/assets/images/Sandtimer.png";
 import ReviewIcon from "@/assets/images/Review.png";
 import DeliveryIcon from "@/assets/images/Delivery.png";
 
-export default function Hero() {
+// The scrollable background banner — scrolls away with the page
+export function HeroBanner({ onRefresh }: { onRefresh?: () => void }) {
   return (
-    <section className="relative flex flex-col items-center">
+    <section className="relative flex flex-col items-center z-20">
       {/* Hero Banner */}
       <div className="relative w-full overflow-hidden">
         <Image
           src={HeroBg}
           alt="Dear Dhaka food spread"
           priority
-          className="w-full h-auto"
+          className="w-full max-h-[200px] object-cover"
         />
 
         {/* Image Overlay layer */}
@@ -25,12 +26,12 @@ export default function Hero() {
           src={HeroOverlay}
           alt="Overlay"
           fill
-          className="opacity-90 z-[1]"
+          className="opacity-90 z-[1] object-cover"
         />
 
         {/* Content Overlay */}
-        <div className="absolute inset-0 z-[2] flex justify-between items-start px-10 pt-11">
-          {/* Location */}
+        <div className="absolute inset-0 z-[2] flex justify-end items-start px-10 pt-6">
+          {/* Location
           <div className="flex items-start gap-2">
             <Image
               src={LocationIcon}
@@ -49,9 +50,13 @@ export default function Hero() {
               <p className="text-xs text-white/80 mt-px">01612-345678</p>
             </div>
           </div>
+          */}
 
           {/* Refresh button */}
           <button
+            onClick={() => {
+              if (onRefresh) onRefresh();
+            }}
             className="bg-transparent border-none cursor-pointer drop-shadow transition-transform duration-300 active:rotate-180 -mt-4"
             aria-label="Refresh"
           >
@@ -59,9 +64,16 @@ export default function Hero() {
           </button>
         </div>
       </div>
+    </section>
+  );
+}
 
+// The logo bridge + restaurant info — goes into the sticky header
+export function HeroInfo() {
+  return (
+    <div className="relative flex flex-col items-center bg-brand-white-dark">
       {/* Logo bridge — white curved arch overlapping the banner */}
-      <div className="relative -mt-16 flex justify-center w-full">
+      <div className="relative flex justify-center w-full -mt-16 z-10">
         <div
           className="rounded-4xl px-11 flex justify-center items-end"
           style={{
@@ -102,6 +114,16 @@ export default function Hero() {
           </span>
         </div>
       </div>
-    </section>
+    </div>
+  );
+}
+
+// Default export for backward compatibility
+export default function Hero() {
+  return (
+    <>
+      <HeroBanner />
+      <HeroInfo />
+    </>
   );
 }
