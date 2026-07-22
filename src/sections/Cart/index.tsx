@@ -134,6 +134,8 @@ export default function CartSection() {
       const orderId = await createOrder({
         subtotal,
         discount: discount + couponDiscount,
+        couponCode: appliedCoupon?.code,
+        couponDiscount: couponDiscount,
         total,
         address,
         deliveryInstructions,

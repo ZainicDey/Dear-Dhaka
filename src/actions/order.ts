@@ -22,6 +22,8 @@ async function generateUniqueOrderNumber(): Promise<string> {
 export async function createOrder(data: {
   subtotal: number;
   discount: number;
+  couponCode?: string;
+  couponDiscount?: number;
   total: number;
   address: string;
   deliveryInstructions?: string;
@@ -34,12 +36,27 @@ export async function createOrder(data: {
       orderNumber,
       subtotal: data.subtotal,
       discount: data.discount,
+      couponCode: data.couponCode,
+      couponDiscount: data.couponDiscount || 0,
       total: data.total,
       address: data.address,
       deliveryInstructions: data.deliveryInstructions,
       items: data.items,
     },
   });
+
+  if (data.couponCode) {
+    try {
+      await prisma.coupon.updateMany({
+        where: { code: { equals: data.couponCode.trim(), mode: "insensitive" } },
+        data: {
+          usedCount: { increment: 1 },
+        },
+      });
+    } catch (err) {
+      console.error("Failed to increment coupon usage count:", err);
+    }
+  }
 
   return order.orderNumber;
 }

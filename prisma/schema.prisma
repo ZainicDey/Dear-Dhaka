@@ -80,16 +80,18 @@ model Coupon {
 }
 
 model Order {
-  id               String   @id @default(cuid())
-  orderNumber      String   @unique
-  subtotal         Float
-  discount         Float
-  total            Float
-  address          String
+  id                   String   @id @default(cuid())
+  orderNumber          String   @unique
+  subtotal             Float
+  discount             Float
+  couponCode           String?
+  couponDiscount       Float?   @default(0)
+  total                Float
+  address              String
   deliveryInstructions String?
-  items            Json     
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  items                Json     
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   @@map("orders")
 }
