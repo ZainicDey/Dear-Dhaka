@@ -16,6 +16,8 @@ interface Order {
   orderNumber: string;
   subtotal: number;
   discount: number;
+  couponCode?: string | null;
+  couponDiscount?: number | null;
   total: number;
   address: string;
   deliveryInstructions: string | null;
@@ -108,19 +110,21 @@ export default function OrderList() {
   };
 
   const buildOrderMessage = (order: Order) => {
+    const couponDisc = order.couponDiscount || 0;
+    const directDiscount = Math.max(0, order.discount - couponDisc);
     const discountPercent =
       order.subtotal > 0
-        ? Math.round((order.discount / order.subtotal) * 100)
+        ? Math.round((directDiscount / order.subtotal) * 100)
         : 0;
 
     const itemLines = order.items
       .map(
         (item) =>
-          `${item.quantity}x ${item.name} x${item.quantity} = ৳${item.price * item.quantity}`
+          `${item.name} x${item.quantity} = ৳${item.price * item.quantity}`
       )
       .join("\n");
 
-    return [
+    const lines = [
       `order_id: #${order.orderNumber}`,
       "Hi Dear Dhaka!",
       "I'd like to order:",
@@ -128,13 +132,25 @@ export default function OrderList() {
       itemLines,
       "",
       `Sub-total = ৳${order.subtotal}`,
-      `Direct Order Discount (${discountPercent}%) = ৳${order.discount}`,
+    ];
+
+    if (directDiscount > 0) {
+      lines.push(`Direct Order Discount (${discountPercent}%) = ৳${directDiscount}`);
+    }
+
+    if (order.couponCode && couponDisc > 0) {
+      lines.push(`Coupon (${order.couponCode}) = -৳${couponDisc}`);
+    }
+
+    lines.push(
       `Delivery = Free (${order.address})`,
       "",
       `Total = ৳${order.total}`,
       "",
-      `Address: ${order.address}${order.deliveryInstructions ? `, ${order.deliveryInstructions}` : ""}`,
-    ].join("\n");
+      `Address: ${order.address}${order.deliveryInstructions ? `, ${order.deliveryInstructions}` : ""}`
+    );
+
+    return lines.join("\n");
   };
 
   const hasActiveFilters = search || dateFrom || dateTo || sortOrder !== "newest";
