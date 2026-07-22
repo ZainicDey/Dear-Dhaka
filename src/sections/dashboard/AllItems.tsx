@@ -61,7 +61,7 @@ export default function AllItems() {
     <div className="flex flex-col gap-3">
       {/* Quick stats */}
       <div className="flex gap-3 mb-2">
-        <div className="flex-1 bg-white rounded-2xl p-4 shadow-sm border border-[#e5e5e5]/50">
+        <div className="flex-1 bg-white rounded-2xl p-4 border border-[#e5e5e5]/50">
           <span className="text-[24px] font-extrabold text-[#301010] block leading-none">
             {items.length}
           </span>
@@ -69,7 +69,7 @@ export default function AllItems() {
             Total Items
           </span>
         </div>
-        <div className="flex-1 bg-white rounded-2xl p-4 shadow-sm border border-[#e5e5e5]/50">
+        <div className="flex-1 bg-white rounded-2xl p-4 border border-[#e5e5e5]/50">
           <span className="text-[24px] font-extrabold text-green-600 block leading-none">
             {items.filter((i) => i.isAvailable).length}
           </span>
@@ -77,7 +77,7 @@ export default function AllItems() {
             Available
           </span>
         </div>
-        <div className="flex-1 bg-white rounded-2xl p-4 shadow-sm border border-[#e5e5e5]/50">
+        <div className="flex-1 bg-white rounded-2xl p-4 border border-[#e5e5e5]/50">
           <span className="text-[24px] font-extrabold text-red-500 block leading-none">
             {items.filter((i) => !i.isAvailable).length}
           </span>
@@ -91,7 +91,7 @@ export default function AllItems() {
       {items.map((item) => (
         <div
           key={item.id}
-          className={`bg-white rounded-2xl p-4 shadow-sm border border-[#e5e5e5]/50 flex items-center gap-3 transition-opacity ${
+          className={`bg-white rounded-2xl p-4 border border-[#e5e5e5]/50 flex items-center gap-3 transition-opacity ${
             !item.isAvailable ? "opacity-75" : ""
           }`}
         >

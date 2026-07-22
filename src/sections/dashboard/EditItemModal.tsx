@@ -109,7 +109,7 @@ export default function EditItemModal({
             </div>
 
             {/* Price and Discount Row */}
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-3">
               <div className="flex-1">
                 <label className="text-[13px] font-semibold text-[#301010] block mb-1.5 ml-1">
                   Original Price (৳)
