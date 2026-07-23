@@ -16,6 +16,7 @@ import Coupons from "@/sections/dashboard/Coupons";
 import Login from "@/sections/dashboard/Login";
 
 export type DashboardSection =
+  | "dashboard"
   | "add-item"
   | "all-items"
   | "categories"
@@ -24,6 +25,7 @@ export type DashboardSection =
   | "coupons";
 
 const sectionTitles: Record<DashboardSection, string> = {
+  dashboard: "Dashboard",
   "add-item": "Add New Item",
   "all-items": "All Items",
   categories: "Categories",
@@ -40,6 +42,13 @@ export default function DashboardPage() {
     useState<DashboardSection>("all-items");
 
   useEffect(() => {
+    // Read the active tab from the URL on load
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab") as DashboardSection;
+    if (tab && sectionTitles[tab]) {
+      setActiveSection(tab);
+    }
+
     checkAdminSession().then((isLoggedIn) => {
       setIsAuthenticated(isLoggedIn);
       setIsCheckingAuth(false);
@@ -53,10 +62,17 @@ export default function DashboardPage() {
   const handleSectionSelect = (section: DashboardSection) => {
     setActiveSection(section);
     setIsPanelOpen(false);
+    
+    // Update the URL so reloads keep the user on the same section
+    const params = new URLSearchParams(window.location.search);
+    params.set("tab", section);
+    window.history.replaceState(null, "", `?${params.toString()}`);
   };
 
   const renderSection = () => {
     switch (activeSection) {
+      case "dashboard":
+        return <AllItems />;
       case "add-item":
         return <AddItem />;
       case "all-items":

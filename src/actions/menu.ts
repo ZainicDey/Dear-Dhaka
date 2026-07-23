@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 
 export async function getMenuItems() {
   return await prisma.menuItem.findMany({
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: "asc" },
   });
 }
 

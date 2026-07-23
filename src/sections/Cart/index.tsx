@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { createOrder } from "@/actions/order";
 import { validateCoupon } from "@/actions/marketing";
+import { useAlert } from "@/context/AlertContext";
 
 import LocationIcon from "@/assets/images/Locaion.png";
 import TrashIcon from "@/assets/images/Remove-trash.png";
@@ -35,6 +36,7 @@ export default function CartSection() {
   const [addressError, setAddressError] = useState(false);
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { showAlert } = useAlert();
 
   // Coupon state
   const [couponCode, setCouponCode] = useState("");
@@ -158,7 +160,7 @@ export default function CartSection() {
       window.open(whatsappUrl, "_blank");
     } catch (error) {
       console.error("Failed to create order:", error);
-      alert("Something went wrong while confirming your order. Please try again.");
+      showAlert("Something went wrong while confirming your order. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

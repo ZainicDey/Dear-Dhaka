@@ -4,9 +4,12 @@ import { useState, useEffect } from "react";
 import { createMenuItem } from "@/actions/menu";
 import { getCategories } from "@/actions/categories";
 import { useRouter } from "next/navigation";
+import { useAlert } from "@/context/AlertContext";
+import CustomSelect from "@/components/dashboard/CustomSelect";
 
 export default function AddItem() {
   const router = useRouter();
+  const { showAlert } = useAlert();
   const [formData, setFormData] = useState({
     name: "",
     originalPrice: "",
@@ -35,6 +38,10 @@ export default function AddItem() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!imageFile) {
+      showAlert("Please upload an image");
+      return;
+    }
     const data = new FormData();
     data.append("name", formData.name);
     data.append("originalPrice", formData.originalPrice);
@@ -44,13 +51,11 @@ export default function AddItem() {
       data.append("discountValue", formData.discountValue);
     data.append("description", formData.description);
     data.append("category", formData.category);
-    if (imageFile) {
-      data.append("image", imageFile);
-    }
+    data.append("image", imageFile);
 
     try {
       await createMenuItem(data);
-      alert("Item added successfully!");
+      showAlert("Item added successfully!");
       setFormData({
         name: "",
         originalPrice: "",
@@ -64,7 +69,7 @@ export default function AddItem() {
       router.refresh();
     } catch (error) {
       console.error(error);
-      alert("Failed to add item");
+      showAlert("Failed to add item");
     }
   };
 
@@ -81,6 +86,7 @@ export default function AddItem() {
           value={formData.name}
           onChange={handleChange}
           placeholder="e.g. Chicken Shingara"
+          required
           className="w-full bg-white rounded-xl py-3 px-4 text-[14px] outline-none border border-[#e5e5e5] focus:border-brand-yellow transition-colors text-[#301010] placeholder:text-[#a3a3a3]"
         />
       </div>
@@ -97,6 +103,7 @@ export default function AddItem() {
             value={formData.originalPrice}
             onChange={handleChange}
             placeholder="150"
+            required
             className="w-full bg-white rounded-xl py-3 px-4 text-[14px] outline-none border border-[#e5e5e5] focus:border-brand-yellow transition-colors text-[#301010] placeholder:text-[#a3a3a3]"
           />
         </div>
@@ -104,16 +111,17 @@ export default function AddItem() {
           <label className="text-[13px] font-semibold text-[#301010] block mb-1.5 ml-1">
             Discount Type
           </label>
-          <select
+          <CustomSelect
             name="discountType"
             value={formData.discountType}
-            onChange={handleChange}
-            className="w-full bg-white rounded-xl py-3 px-4 text-[14px] outline-none border border-[#e5e5e5] focus:border-brand-yellow transition-colors text-[#301010] cursor-pointer"
-          >
-            <option value="">None</option>
-            <option value="FLAT">Flat (৳)</option>
-            <option value="PERCENTAGE">Percentage (%)</option>
-          </select>
+            onChange={(val) => setFormData((prev) => ({ ...prev, discountType: val }))}
+            placeholder="None"
+            options={[
+              { value: "", label: "None" },
+              { value: "FLAT", label: "Flat (৳)" },
+              { value: "PERCENTAGE", label: "Percentage (%)" },
+            ]}
+          />
         </div>
         {formData.discountType && (
           <div className="flex-1">
@@ -128,6 +136,7 @@ export default function AddItem() {
               value={formData.discountValue}
               onChange={handleChange}
               placeholder={formData.discountType === "FLAT" ? "20" : "10"}
+              required={!!formData.discountType}
               className="w-full bg-white rounded-xl py-3 px-4 text-[14px] outline-none border border-[#e5e5e5] focus:border-brand-yellow transition-colors text-[#301010] placeholder:text-[#a3a3a3]"
             />
           </div>
@@ -159,24 +168,21 @@ export default function AddItem() {
         </div>
       )}
 
-      {/* Category */}
       <div>
         <label className="text-[13px] font-semibold text-[#301010] block mb-1.5 ml-1">
           Category
         </label>
-        <select
+        <CustomSelect
           name="category"
           value={formData.category}
-          onChange={handleChange}
-          className="w-full bg-white rounded-xl py-3 px-4 text-[14px] outline-none border border-[#e5e5e5] focus:border-brand-yellow transition-colors text-[#301010] cursor-pointer"
-        >
-          <option value="">Select category</option>
-          {categories.map((cat) => (
-            <option key={cat.id} value={cat.name}>
-              {cat.name}
-            </option>
-          ))}
-        </select>
+          onChange={(val) => setFormData((prev) => ({ ...prev, category: val }))}
+          placeholder="Select category"
+          required
+          options={[
+            { value: "", label: "Select category" },
+            ...categories.map((cat) => ({ value: cat.name, label: cat.name })),
+          ]}
+        />
       </div>
 
       {/* Description */}
@@ -190,6 +196,7 @@ export default function AddItem() {
           onChange={handleChange}
           placeholder="Describe the item..."
           rows={3}
+          required
           className="w-full bg-white rounded-xl py-3 px-4 text-[14px] outline-none border border-[#e5e5e5] focus:border-brand-yellow transition-colors text-[#301010] placeholder:text-[#a3a3a3] resize-none"
         />
       </div>

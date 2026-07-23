@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, Geist_Mono } from "next/font/google";
+import { Bricolage_Grotesque, Geist_Mono, Geist } from "next/font/google";
 import "./globals.css";
 
 const bricolageGrotesque = Bricolage_Grotesque({
@@ -25,6 +25,11 @@ export const viewport: import("next").Viewport = {
 };
 
 import { CartProvider } from "@/context/CartContext";
+import { AlertProvider } from "@/context/AlertContext";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+
 
 export default function RootLayout({
   children,
@@ -34,10 +39,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${bricolageGrotesque.variable} ${geistMono.variable} h-full antialiased`}
+      className={cn("h-full", "antialiased", bricolageGrotesque.variable, geistMono.variable, "font-sans", geist.variable)}
     >
       <body className="min-h-full flex flex-col">
-        <CartProvider>{children}</CartProvider>
+        <AlertProvider>
+          <CartProvider>{children}</CartProvider>
+        </AlertProvider>
       </body>
     </html>
   );

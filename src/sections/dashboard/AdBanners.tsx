@@ -9,6 +9,8 @@ import {
   reorderBanners,
   getCoupons
 } from "@/actions/marketing";
+import { useAlert } from "@/context/AlertContext";
+import CustomSelect from "@/components/dashboard/CustomSelect";
 import {
   DndContext,
   closestCenter,
@@ -128,6 +130,8 @@ export default function AdBanners() {
   const [showForm, setShowForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [selectedCouponCode, setSelectedCouponCode] = useState<string>("");
+  const { showAlert } = useAlert();
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -196,10 +200,11 @@ export default function AdBanners() {
       await createBanner(formData);
       setShowForm(false);
       setPreviewImage(null);
+      setSelectedCouponCode("");
       fetchData();
     } catch (error) {
       console.error("Error creating banner:", error);
-      alert("Failed to create banner");
+      showAlert("Failed to create banner");
     } finally {
       setIsSubmitting(false);
     }
@@ -286,17 +291,19 @@ export default function AdBanners() {
             <label className="text-[13px] font-bold text-[#301010] block mb-2">
               Link Coupon (Optional)
             </label>
-            <select
+            <CustomSelect
               name="couponCode"
-              className="w-full bg-[#f4f3ed] rounded-xl py-3 px-4 text-[13px] outline-none text-[#301010]"
-            >
-              <option value="">No Coupon</option>
-              {coupons.map(coupon => (
-                <option key={coupon.id} value={coupon.code}>
-                  {coupon.code} ({coupon.discountPercent ? `${coupon.discountPercent}%` : `৳${coupon.discountAmount}`} OFF)
-                </option>
-              ))}
-            </select>
+              value={selectedCouponCode}
+              onChange={setSelectedCouponCode}
+              placeholder="No Coupon"
+              options={[
+                { value: "", label: "No Coupon" },
+                ...coupons.map(coupon => ({
+                  value: coupon.code,
+                  label: `${coupon.code} (${coupon.discountPercent ? `${coupon.discountPercent}%` : `৳${coupon.discountAmount}`} OFF)`
+                }))
+              ]}
+            />
           </div>
 
           <button 

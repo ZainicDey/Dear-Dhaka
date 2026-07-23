@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { updateMenuItem, toggleMenuItemAvailability } from "@/actions/menu";
 import { getCategories } from "@/actions/categories";
+import { useAlert } from "@/context/AlertContext";
+import CustomSelect from "@/components/dashboard/CustomSelect";
 
 export default function EditItemModal({ 
   item, 
@@ -13,6 +15,7 @@ export default function EditItemModal({
   onClose: () => void; 
   onSuccess: () => void; 
 }) {
+  const { showAlert } = useAlert();
   const [formData, setFormData] = useState({
     name: item.name || "",
     originalPrice: item.originalPrice ? String(item.originalPrice) : "",
@@ -65,7 +68,7 @@ export default function EditItemModal({
       onSuccess();
     } catch (error) {
       console.error(error);
-      alert("Failed to update item");
+      showAlert("Failed to update item");
     } finally {
       setLoading(false);
     }
@@ -128,16 +131,17 @@ export default function EditItemModal({
                 <label className="text-[13px] font-semibold text-[#301010] block mb-1.5 ml-1">
                   Discount Type
                 </label>
-                <select
+                <CustomSelect
                   name="discountType"
                   value={formData.discountType}
-                  onChange={handleChange}
-                  className="w-full bg-white rounded-xl py-3 px-4 text-[14px] outline-none border border-[#e5e5e5] focus:border-brand-yellow transition-colors text-[#301010] cursor-pointer"
-                >
-                  <option value="">None</option>
-                  <option value="FLAT">Flat (৳)</option>
-                  <option value="PERCENTAGE">Percentage (%)</option>
-                </select>
+                  onChange={(val) => setFormData((prev) => ({ ...prev, discountType: val }))}
+                  placeholder="None"
+                  options={[
+                    { value: "", label: "None" },
+                    { value: "FLAT", label: "Flat (৳)" },
+                    { value: "PERCENTAGE", label: "Percentage (%)" },
+                  ]}
+                />
               </div>
               {formData.discountType && (
                 <div className="flex-1">
@@ -175,20 +179,17 @@ export default function EditItemModal({
               <label className="text-[13px] font-semibold text-[#301010] block mb-1.5 ml-1">
                 Category
               </label>
-              <select
+              <CustomSelect
                 name="category"
                 value={formData.category}
-                onChange={handleChange}
+                onChange={(val) => setFormData((prev) => ({ ...prev, category: val }))}
+                placeholder="Select category"
                 required
-                className="w-full bg-white rounded-xl py-3 px-4 text-[14px] outline-none border border-[#e5e5e5] focus:border-brand-yellow transition-colors text-[#301010] cursor-pointer"
-              >
-                <option value="">Select category</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.name}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
+                options={[
+                  { value: "", label: "Select category" },
+                  ...categories.map((cat) => ({ value: cat.name, label: cat.name })),
+                ]}
+              />
             </div>
 
             {/* Description */}

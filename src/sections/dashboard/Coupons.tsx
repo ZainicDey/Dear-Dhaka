@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getCoupons, createCoupon, toggleCoupon, deleteCoupon } from "@/actions/marketing";
+import CustomSelect from "@/components/dashboard/CustomSelect";
 
 export default function Coupons() {
   const [coupons, setCoupons] = useState<any[]>([]);
@@ -93,16 +94,17 @@ export default function Coupons() {
           />
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <select
-              value={discountType}
-              onChange={(e) =>
-                setDiscountType(e.target.value as "percent" | "amount")
-              }
-              className="flex-1 bg-[#f4f3ed] rounded-xl py-3 px-4 text-[14px] outline-none text-[#301010]"
-            >
-              <option value="percent">Percentage (%)</option>
-              <option value="amount">Fixed Amount (৳)</option>
-            </select>
+            <div className="flex-1">
+              <CustomSelect
+                name="discountType"
+                value={discountType}
+                onChange={(val) => setDiscountType(val as "percent" | "amount")}
+                options={[
+                  { value: "percent", label: "Percentage (%)" },
+                  { value: "amount", label: "Fixed Amount (৳)" },
+                ]}
+              />
+            </div>
 
             <input
               type="number"
