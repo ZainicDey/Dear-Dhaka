@@ -26,19 +26,7 @@ export interface MenuItem {
   isAvailable?: boolean;
 }
 
-// --- Mock Data ---
-export const categories = [
-  "Breakfast Specials",
-  "Lunch Menu",
-  "Snacks Menu",
-  "Combo",
-  "Desi-Chinese Feasts",
-  "Biryani Platters",
-  "Khidmeer",
-  "Street Style BBQ",
-  "Beverages",
-  "Add-ons",
-];
+
 
 // --- Sub-components ---
 
@@ -74,7 +62,7 @@ export function SearchBar({
 }
 
 export function CategoryTabs({
-  categories: categoriesList = categories,
+  categories: categoriesList = [],
   selected,
   onSelect,
 }: {
@@ -230,7 +218,7 @@ function MenuItemCard({ item, onClick }: { item: MenuItem; onClick?: () => void 
           </div>
 
           {/* Description */}
-          <p className="text-[13.5px] text-[#262114] mt-4 font-light leading-tight tracking-tight">
+          <p className="text-[13.5px] text-[#262114] mt-4 font-light leading-tight tracking-tight line-clamp-3">
             {item.description}
           </p>
         </div>

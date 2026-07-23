@@ -6,14 +6,13 @@ import FlatCards from "@/sections/FlatCard";
 import MenuSection, {
   SearchBar,
   CategoryTabs,
-  categories as defaultCategories,
 } from "@/sections/Items";
 import CartStickyButton from "@/components/CartStickyButton";
 import { getCategories } from "@/actions/categories";
 
 export default function Home() {
-  const [categoriesList, setCategoriesList] = useState<string[]>(defaultCategories);
-  const [selectedCategory, setSelectedCategory] = useState(defaultCategories[0]);
+  const [categoriesList, setCategoriesList] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const heroInfoRef = useRef<HTMLDivElement>(null);
@@ -76,7 +75,7 @@ export default function Home() {
           {heroInfoHeight !== undefined && (
             <div
               className="sticky z-20 bg-brand-white-dark"
-              style={{ top: heroInfoHeight - 48 }}
+              style={{ top: heroInfoHeight - 60 }}
             >
               <SearchBar query={searchQuery} onQueryChange={setSearchQuery} />
               <CategoryTabs
