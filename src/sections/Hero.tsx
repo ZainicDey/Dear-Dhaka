@@ -18,7 +18,7 @@ export function HeroBanner({ onRefresh }: { onRefresh?: () => void }) {
           src={HeroBg}
           alt="Dear Dhaka food spread"
           priority
-          className="w-full max-h-[200px] object-cover"
+          className="w-full max-h-[170px] object-cover"
         />
 
         {/* Image Overlay layer */}

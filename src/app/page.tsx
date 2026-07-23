@@ -62,7 +62,7 @@ export default function Home() {
         {/* ── Sticky zone 1: Logo + Dear Dhaka + badges ────────── */}
         <div
           ref={heroInfoRef}
-          className="sticky top-16 z-30 bg-brand-white-dark"
+          className="sticky -top-12 z-30 bg-brand-white-dark"
         >
           <HeroInfo />
         </div>
@@ -71,12 +71,12 @@ export default function Home() {
         <FlatCards />
 
         {/* ── Search bar, Category tabs, and Menu items ─────────── */}
-        <section className="border-[1.1px] mt-4 border-[#d9d9d9]/50 rounded-t-4xl overflow-clip bg-brand-white-dark relative">
+        <section className="border-[1.1px] mt-3 border-[#d9d9d9]/50 rounded-t-4xl overflow-clip bg-brand-white-dark relative">
           {/* Sticky zone 2: Search bar + Category tabs */}
           {heroInfoHeight !== undefined && (
             <div
               className="sticky z-20 bg-brand-white-dark"
-              style={{ top: heroInfoHeight + 64 }}
+              style={{ top: heroInfoHeight - 48 }}
             >
               <SearchBar query={searchQuery} onQueryChange={setSearchQuery} />
               <CategoryTabs

@@ -155,7 +155,7 @@ export default function FlatCards() {
   if (banners.length === 0) return null;
 
   return (
-    <section className="pb-4">
+    <section>
       <div
         ref={scrollRef}
         onPointerDown={onPointerDown}

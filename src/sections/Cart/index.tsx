@@ -246,7 +246,7 @@ export default function CartSection() {
               placeholder="(Optional) Floor/Apt No or tell us how we can find you..."
               value={deliveryInstructions}
               onChange={(e) => setDeliveryInstructions(e.target.value)}
-              className="w-full bg-[#f4f3ed] rounded-xl py-3 px-4 text-[13px] outline-none placeholder:text-gray-400 text-[#301010]"
+              className="w-full bg-[#f4f3ed] rounded-[24px] py-3 px-4 text-[13px] outline-none placeholder:text-gray-400 text-[#301010]"
             />
           </div>
         </div>
@@ -261,11 +261,19 @@ export default function CartSection() {
           >
             {/* Image */}
             <div className="w-16 h-16 shrink-0">
-              <Image
-                src={MockItemImage}
-                alt={item.name}
-                className="w-full h-full object-cover rounded-xl"
-              />
+              {item.image ? (
+                <img
+                  src={item.image}
+                  alt={item.name}
+                  className="w-full h-full object-cover rounded-xl"
+                />
+              ) : (
+                <Image
+                  src={MockItemImage}
+                  alt={item.name}
+                  className="w-full h-full object-cover rounded-xl"
+                />
+              )}
             </div>
 
             {/* Details */}
