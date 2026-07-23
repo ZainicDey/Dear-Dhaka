@@ -39,14 +39,9 @@ export default function CartSection() {
   // Coupon state
   const [couponCode, setCouponCode] = useState("");
   const [couponStatus, setCouponStatus] = useState<
-    "idle" | "checking" | "valid" | "invalid" | "applied"
+    "idle" | "checking" | "invalid" | "applied"
   >(appliedCoupon ? "applied" : "idle");
   const [couponError, setCouponError] = useState("");
-  const [validatedCoupon, setValidatedCoupon] = useState<{
-    code: string;
-    discountAmount: number;
-    label: string;
-  } | null>(null);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Sync applied coupon state on mount
@@ -61,11 +56,11 @@ export default function CartSection() {
   const handleCouponInput = (value: string) => {
     setCouponCode(value);
     setCouponError("");
-    setValidatedCoupon(null);
 
-    // If already applied, removing the text should remove the coupon
+    // If already applied, changing the text should remove the coupon
     if (couponStatus === "applied") {
       removeCoupon();
+      setCouponStatus("idle");
     }
 
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
@@ -82,39 +77,22 @@ export default function CartSection() {
       try {
         const result = await validateCoupon(trimmed, subtotal);
         if (result.valid) {
-          setCouponStatus("valid");
-          setValidatedCoupon({
+          applyCoupon({
             code: result.code!,
             discountAmount: result.discountAmount!,
             label: result.label!,
           });
+          setCouponStatus("applied");
           setCouponError("");
         } else {
           setCouponStatus("invalid");
           setCouponError(result.error || "Invalid coupon");
-          setValidatedCoupon(null);
         }
       } catch {
         setCouponStatus("invalid");
         setCouponError("Failed to validate coupon");
-        setValidatedCoupon(null);
       }
     }, 1000);
-  };
-
-  const handleApplyCoupon = () => {
-    if (validatedCoupon) {
-      applyCoupon(validatedCoupon);
-      setCouponStatus("applied");
-    }
-  };
-
-  const handleRemoveCoupon = () => {
-    removeCoupon();
-    setCouponCode("");
-    setCouponStatus("idle");
-    setCouponError("");
-    setValidatedCoupon(null);
   };
 
   const discountPercent =
@@ -187,7 +165,7 @@ export default function CartSection() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen relative pb-24">
+    <div className="flex flex-col min-h-screen relative pb-24 tracking-tight">
       {/* Header */}
       <div className="flex items-center px-5 pt-11 pb-6">
         <Link
@@ -200,16 +178,16 @@ export default function CartSection() {
       </div>
 
       {/* Address Card */}
-      <div className="px-5 mb-6">
+      <div className="px-5 mb-5">
         <div className="bg-white rounded-[24px] p-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-3 ml-3">
-            <Image src={LocationIcon} alt="Location" width={28} height={28} />
-            <span className="font-normal text-[19px] text-[#301010]">
+          <div className="flex items-center gap-2 mb-1 ml-3">
+            <Image src={LocationIcon} alt="Location" width={26} height={26} />
+            <span className="font-normal text-[17px] text-[#301010]">
               Delivery Address
             </span>
           </div>
 
-          <div className="relative mb-4">
+          <div className="relative mb-3">
             <div className="absolute left-4.5 top-1/2 -translate-y-1/2">
               <Image
                 src={SearchIcon}
@@ -238,7 +216,7 @@ export default function CartSection() {
           )}
 
           <div>
-            <span className="text-[14px] ml-5 text-[#301010] block mb-2">
+            <span className="text-[14px] ml-5 text-[#301010] block mb-1">
               Delivery Instructions
             </span>
             <input
@@ -277,12 +255,12 @@ export default function CartSection() {
             </div>
 
             {/* Details */}
-            <div className="flex-1 flex flex-col justify-between">
+            <div className="flex-1 flex flex-col relative">
               <div className="flex justify-between items-start">
                 <span className="font-bold text-[18px] text-[#301010]">
                   {item.name}
                 </span>
-                <div className="flex flex-col items-end">
+                <div className="flex flex-col mr-5 items-end">
                   <span className="font-extrabold text-[18px] text-[#301010]">
                     ৳{item.price}
                   </span>
@@ -302,7 +280,7 @@ export default function CartSection() {
               </div>
 
               {/* Quantity Controls */}
-              <div className="flex items-center gap-3 -mt-4 border border-gray-200 rounded-full w-fit px-2 py-1">
+              <div className="flex items-center gap-3 -mt-5 border border-gray-200 rounded-full w-fit px-2 py-0.5">
                 <button
                   onClick={() =>
                     item.quantity === 1
@@ -365,18 +343,18 @@ export default function CartSection() {
       </div>
 
       {/* Summary */}
-      <div className="px-12 pt-6 pb-4 bg-brand-white-dark mt-4 flex-col justify-center leading-none">
+      <div className="pt-6 pb-4 bg-brand-white-dark mt-4 flex-col justify-center leading-none">
         <div className="flex justify-between mb-2">
-          <span className="text-[17px] text-[#301010]">Subtotal</span>
-          <span className="font-bold text-[17px] text-[#301010]">
+          <span className="ml-12 text-[17px] text-[#301010]">Subtotal</span>
+          <span className="mr-10 font-bold text-[17px] text-[#301010]">
             ৳{subtotal}
           </span>
         </div>
         <div className="flex justify-between mb-2">
-          <span className="text-[17px] text-[#301010]">
+          <span className="ml-12 text-[17px] text-[#301010]">
             Direct Order Discount
           </span>
-          <span className="font-bold text-[17px] text-[#301010]">
+          <span className="mr-10 font-bold text-[17px] text-[#301010]">
             -৳{discount}
           </span>
         </div>
@@ -384,29 +362,29 @@ export default function CartSection() {
         {/* Coupon Discount Line */}
         {appliedCoupon && couponDiscount > 0 && (
           <div className="flex justify-between mb-2">
-            <span className="text-[17px] text-green-600">
+            <span className="ml-12 text-[17px] text-green-600">
               Coupon ({appliedCoupon.code})
             </span>
-            <span className="font-bold text-[17px] text-green-600">
+            <span className="mr-10 font-bold text-[17px] text-green-600">
               -৳{couponDiscount}
             </span>
           </div>
         )}
 
         <div className="flex justify-between mb-4">
-          <span className="text-[17px] text-[#301010]">
+          <span className="ml-12 text-[17px] text-[#301010]">
             Delivery Charge (Free)
           </span>
-          <span className="font-bold text-[17px] text-[#301010]">৳0</span>
+          <span className="mr-10 font-bold text-[17px] text-[#301010]">৳0</span>
         </div>
 
         {/* Custom line below Delivery Charge */}
-        <div className="border-b-[1.5px] border-[#e5e5e5] mb-4 -mx-8"></div>
+        <div className="border-b-[1.5px] border-[#e5e5e5] mb-4 ml-4 mr-4"></div>
         <div className="flex justify-between mb-2">
-          <span className="font-extrabold text-[17px] text-[#301010]">
+          <span className="ml-12 font-extrabold text-[17px] text-[#301010]">
             Total
           </span>
-          <span className="font-extrabold text-[17px] text-[#301010]">
+          <span className="mr-10 font-extrabold text-[17px] text-[#301010]">
             ৳{total}
           </span>
         </div>
@@ -427,8 +405,7 @@ export default function CartSection() {
             placeholder="Apply Coupon Code"
             value={couponCode}
             onChange={(e) => handleCouponInput(e.target.value)}
-            disabled={couponStatus === "applied"}
-            className="flex-1 bg-transparent text-[14px] outline-none text-[#301010] placeholder:text-[#767676] uppercase tracking-wider disabled:opacity-60"
+            className="flex-1 bg-transparent text-[14px] outline-none text-[#301010] placeholder:text-[#767676] uppercase disabled:opacity-60"
           />
 
           {/* Status indicators */}
@@ -440,34 +417,9 @@ export default function CartSection() {
               </svg>
             )}
 
-            {couponStatus === "valid" && (
-              <button
-                onClick={handleApplyCoupon}
-                className="bg-green-500 hover:bg-green-600 text-white rounded-full w-5 h-5 flex items-center justify-center cursor-pointer transition-colors active:scale-95"
-                title="Apply coupon"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-              </button>
-            )}
-
-            {couponStatus === "applied" && (
-              <button
-                onClick={handleRemoveCoupon}
-                className="bg-red-100 hover:bg-red-200 text-red-600 rounded-full w-5 h-5 flex items-center justify-center cursor-pointer transition-colors active:scale-95 text-[12px] font-bold"
-                title="Remove coupon"
-              >
-                ✕
-              </button>
-            )}
-
             {couponStatus === "invalid" && (
-              <div className="bg-red-100 text-red-500 rounded-full w-8 h-8 flex items-center justify-center">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
+              <div className="bg-red-100 text-red-500 rounded-full w-6 h-6 flex items-center justify-center font-extrabold text-[14px]">
+                !
               </div>
             )}
           </div>
@@ -476,17 +428,6 @@ export default function CartSection() {
         {/* Error / Success messages */}
         {couponStatus === "invalid" && couponError && (
           <p className="text-red-500 text-[12px] mt-1.5 ml-4">{couponError}</p>
-        )}
-        {couponStatus === "valid" && validatedCoupon && (
-          <p className="text-green-600 text-[12px] mt-1.5 ml-4 font-semibold flex items-center gap-1">
-            {validatedCoupon.label} — saves ৳{validatedCoupon.discountAmount}. Tap
-            <span className="bg-green-500 text-white rounded-full w-[14px] h-[14px] flex items-center justify-center inline-flex mx-0.5">
-              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-            </span>
-            to apply!
-          </p>
         )}
         {couponStatus === "applied" && appliedCoupon && (
           <p className="text-green-600 text-[12px] mt-1.5 ml-4 font-semibold">
